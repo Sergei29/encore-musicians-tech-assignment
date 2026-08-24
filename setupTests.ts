@@ -1,1 +1,1 @@
-import '@testing-library/jest-dom';
+// Shared Vitest setup can be added here when needed.
