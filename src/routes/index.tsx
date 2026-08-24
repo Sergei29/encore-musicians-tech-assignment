@@ -71,6 +71,8 @@ function Home() {
 
       return nextOffset < lastPage.total ? nextOffset : undefined;
     },
+
+    staleTime: 1000 * 60, // 1 minute
   });
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
