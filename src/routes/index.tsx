@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type {
   MusicianSearchResponse,
   FetchMusiciansParams,
@@ -25,14 +25,6 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 
   return debouncedValue;
 }
-
-const getNextPageParam = (
-  lastPage: MusicianSearchResponse,
-): number | undefined => {
-  const nextOffset = lastPage.offset + lastPage.results.length;
-
-  return nextOffset < lastPage.total ? nextOffset : undefined;
-};
 
 const fetchMusicians = async ({
   search,
@@ -95,7 +87,16 @@ function Home() {
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
-  const musiciansQuery = useInfiniteQuery({
+  const {
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+    data,
+    isPending,
+    isError,
+    isSuccess,
+    error,
+  } = useInfiniteQuery({
     queryKey: [
       "musicians",
       {
@@ -127,17 +128,47 @@ function Home() {
       return nextOffset < lastPage.total ? nextOffset : undefined;
     },
   });
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const totalResults = musiciansQuery.data?.pages[0]?.total ?? 0;
-  const musicians =
-    musiciansQuery.data?.pages.flatMap((page) => page.results) ?? [];
+  const totalResults = data?.pages[0]?.total ?? 0;
+  const musicians = data?.pages.flatMap((page) => page.results) ?? [];
 
   const loadedResults = musicians.length;
+
+  useEffect(() => {
+    const loadMoreElement = loadMoreRef.current;
+
+    if (!loadMoreElement || !hasNextPage) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      {
+        root: null,
+        rootMargin: "300px 0px",
+        threshold: 0,
+      },
+    );
+
+    observer.observe(loadMoreElement);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
     <main className="mx-auto max-w-5xl p-6">
       <h1 className="text-2xl font-bold">Encore Musician Search</h1>
-      <div className="mt-6 mb-4 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <section
+        aria-label="Musician filters"
+        className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+      >
         <div className="gap-0 flex flex-col">
           <label className="text-sm font-medium text-gray-700" htmlFor="search">
             Search
@@ -225,44 +256,54 @@ function Home() {
             <option value="price-desc">Price: High to Low</option>
           </select>
         </div>
-      </div>
-      <p className="mt-2 text-gray-600">
-        Showing {loadedResults} of {totalResults} profiles.
-      </p>
+      </section>
 
-      {musiciansQuery.isPending && (
-        <p className="mt-2 text-gray-600">Loading…</p>
-      )}
-
-      {musiciansQuery.isError && (
-        <p className="mt-2 text-red-600">
-          Error: {(musiciansQuery.error as Error).message}
+      <section aria-label="Musician results" className="mt-6">
+        <p className="mt-2 text-gray-600">
+          Showing {loadedResults} of {totalResults} profiles.
         </p>
-      )}
 
-      {musiciansQuery.isSuccess && musiciansQuery.data?.pages.length === 0 && (
-        <p className="mt-2 text-gray-600">No results found.</p>
-      )}
+        {isPending && <p className="mt-2 text-gray-600">Loading…</p>}
 
-      <ul>
-        {musiciansQuery.data?.pages.map((page, pageIndex) => (
-          <li key={pageIndex}>
-            {page.results.map((musician) => (
-              <div key={musician.url} className="border-b py-4">
-                <h2 className="text-lg font-semibold">{musician.title}</h2>
-                <p>{musician.description}</p>
-                <p>
-                  Rating: {musician.rating} ({musician.numReviews} reviews)
-                </p>
-                <p>
-                  Price Range: ${musician.minPrice} - ${musician.maxPrice}
-                </p>
-                <p>Location: {musician.location}</p>
-              </div>
-            ))}
-          </li>
-        ))}
-      </ul>
+        {isError && (
+          <p className="mt-2 text-red-600">Error: {(error as Error).message}</p>
+        )}
+
+        {isSuccess && data?.pages.length === 0 && (
+          <p className="mt-2 text-gray-600">No results found.</p>
+        )}
+
+        <ul>
+          {data?.pages.map((page, pageIndex) => (
+            <li key={pageIndex}>
+              {page.results.map((musician) => (
+                <div key={musician.url} className="border-b py-4">
+                  <h2 className="text-lg font-semibold">{musician.title}</h2>
+                  <p>{musician.description}</p>
+                  <p>
+                    Rating: {musician.rating} ({musician.numReviews} reviews)
+                  </p>
+                  <p>
+                    Price Range: ${musician.minPrice} - ${musician.maxPrice}
+                  </p>
+                  <p>Location: {musician.location}</p>
+                </div>
+              ))}
+            </li>
+          ))}
+        </ul>
+
+        {hasNextPage && (
+          <div key="hasNextPage" ref={loadMoreRef} aria-hidden="true" />
+        )}
+
+        <div role="status" className="mt-2 text-gray-600 flex justify-end">
+          {isFetchingNextPage && <p>Loading more musicians…</p>}
+          {!hasNextPage && musicians.length > 0 && (
+            <p>You&rsquo;ve reached the end of the results.</p>
+          )}
+        </div>
+      </section>
     </main>
   );
 }
