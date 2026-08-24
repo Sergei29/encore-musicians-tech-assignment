@@ -87,6 +87,14 @@ function Home() {
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
+  const resetFilters = () => {
+    setSearch("");
+    setCategory("");
+    setMinPrice("");
+    setMaxPrice("");
+    setSort("rating-desc");
+  };
+
   const {
     hasNextPage,
     fetchNextPage,
@@ -256,6 +264,16 @@ function Home() {
             <option value="price-desc">Price: High to Low</option>
           </select>
         </div>
+
+        <div className="mt-auto mb-1">
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="rounded-md bg-gray-200 px-1 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300 cursor-pointer"
+          >
+            Reset Filters
+          </button>
+        </div>
       </section>
 
       <section aria-label="Musician results" className="mt-6">
@@ -269,26 +287,33 @@ function Home() {
           <p className="mt-2 text-red-600">Error: {(error as Error).message}</p>
         )}
 
-        {isSuccess && data?.pages.length === 0 && (
+        {isSuccess && musicians.length === 0 && (
           <p className="mt-2 text-gray-600">No results found.</p>
         )}
 
-        <ul>
-          {data?.pages.map((page, pageIndex) => (
-            <li key={pageIndex}>
-              {page.results.map((musician) => (
-                <div key={musician.url} className="border-b py-4">
-                  <h2 className="text-lg font-semibold">{musician.title}</h2>
-                  <p>{musician.description}</p>
-                  <p>
-                    Rating: {musician.rating} ({musician.numReviews} reviews)
-                  </p>
-                  <p>
-                    Price Range: ${musician.minPrice} - ${musician.maxPrice}
-                  </p>
-                  <p>Location: {musician.location}</p>
-                </div>
-              ))}
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {musicians.map((musician) => (
+            <li
+              key={musician.url}
+              className="border border-gray-300 rounded-md p-2 overflow-hidden"
+            >
+              <img
+                src={musician.photo}
+                alt={`${musician.title} musician profile`}
+                className="aspect-4/3 w-full object-cover"
+                loading="lazy"
+                width={400}
+                height={300}
+              />
+              <h2 className="text-lg font-semibold">{musician.title}</h2>
+              <p>{musician.description}</p>
+              <p>
+                Rating: {musician.rating} ({musician.numReviews} reviews)
+              </p>
+              <p>
+                Price Range: ${musician.minPrice} - ${musician.maxPrice}
+              </p>
+              <p>Location: {musician.location}</p>
             </li>
           ))}
         </ul>
