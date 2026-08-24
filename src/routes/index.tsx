@@ -227,9 +227,7 @@ function Home() {
         </div>
       </div>
       <p className="mt-2 text-gray-600">
-        {musiciansQuery.data
-          ? `Showing ${loadedResults} of ${totalResults} profiles.`
-          : "Loading…"}
+        Showing {loadedResults} of {totalResults} profiles.
       </p>
 
       {musiciansQuery.isPending && (
