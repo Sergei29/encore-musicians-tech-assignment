@@ -32,3 +32,11 @@ export interface FetchMusiciansParams {
   limit?: number;
   signal?: AbortSignal;
 }
+
+export interface MusicianFiltersState {
+  search: string;
+  category: string;
+  minPrice: string;
+  maxPrice: string;
+  sort: MusicianSort;
+}
