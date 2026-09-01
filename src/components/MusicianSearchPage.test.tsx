@@ -181,13 +181,16 @@ describe("MusicianSearchPage", () => {
   });
 
   it("applies the debounced search value to a new query", async () => {
+    vi.useFakeTimers();
     fetchMusiciansMock.mockResolvedValue(createResponse([]));
 
     renderPage();
 
-    await waitFor(() => {
-      expect(fetchMusiciansMock).toHaveBeenCalledOnce();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(299);
     });
+
+    expect(fetchMusiciansMock).toHaveBeenCalledOnce();
 
     fireEvent.change(screen.getByRole("searchbox", { name: "Search" }), {
       target: { value: "piano" },
@@ -195,12 +198,17 @@ describe("MusicianSearchPage", () => {
 
     expect(fetchMusiciansMock).toHaveBeenCalledOnce();
 
-    await waitFor(
-      () => {
-        expect(fetchMusiciansMock).toHaveBeenCalledTimes(2);
-      },
-      { timeout: 1_000 },
-    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(299);
+    });
+
+    expect(fetchMusiciansMock).toHaveBeenCalledOnce();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+
+    expect(fetchMusiciansMock).toHaveBeenCalledTimes(2);
 
     expect(fetchMusiciansMock.mock.calls[1][0]).toMatchObject({
       search: "piano",

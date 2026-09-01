@@ -11,3 +11,4 @@ dist-ssr/
 .claude/
 *.tsbuildinfo
 routeTree.gen.ts
+.vscode
