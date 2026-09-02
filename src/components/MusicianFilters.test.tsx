@@ -6,8 +6,8 @@ import MusicianFilters from "./MusicianFilters";
 const filters: MusicianFiltersState = {
   search: "jazz",
   category: "Jazz Band",
-  minPrice: "200",
-  maxPrice: "800",
+  minPrice: 200,
+  maxPrice: 800,
   sort: "rating-desc",
 };
 
@@ -64,12 +64,12 @@ describe("MusicianFilters", () => {
 
     expect(onChange).toHaveBeenNthCalledWith(1, "search", "piano");
     expect(onChange).toHaveBeenNthCalledWith(2, "category", "Pianist");
-    expect(onChange).toHaveBeenNthCalledWith(3, "minPrice", "300");
-    expect(onChange).toHaveBeenNthCalledWith(4, "maxPrice", "900");
+    expect(onChange).toHaveBeenNthCalledWith(3, "minPrice", 300);
+    expect(onChange).toHaveBeenNthCalledWith(4, "maxPrice", 900);
     expect(onChange).toHaveBeenNthCalledWith(5, "sort", "price-asc");
   });
 
-  it("calls onReset when reset is selected", () => {
+  it("resets the visible form and calls onReset", () => {
     const onReset = vi.fn();
 
     render(
@@ -80,8 +80,111 @@ describe("MusicianFilters", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Reset filters" }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Reset filters",
+      }),
+    );
 
     expect(onReset).toHaveBeenCalledOnce();
+
+    expect(
+      (
+        screen.getByRole("searchbox", {
+          name: "Search",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("");
+
+    expect(
+      (
+        screen.getByRole("combobox", {
+          name: "Category",
+        }) as HTMLSelectElement
+      ).value,
+    ).toBe("");
+
+    expect(
+      (
+        screen.getByRole("spinbutton", {
+          name: "Min price",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("");
+
+    expect(
+      (
+        screen.getByRole("combobox", {
+          name: "Sort by",
+        }) as HTMLSelectElement
+      ).value,
+    ).toBe("rating-desc");
+  });
+
+  it("synchronizes the form when filter props change", () => {
+    const onChange = vi.fn();
+    const onReset = vi.fn();
+
+    const { rerender } = render(
+      <MusicianFilters
+        filters={filters}
+        onChange={onChange}
+        onReset={onReset}
+      />,
+    );
+
+    rerender(
+      <MusicianFilters
+        filters={{
+          search: "piano",
+          category: "Pianist",
+          minPrice: 400,
+          maxPrice: undefined,
+          sort: "price-asc",
+        }}
+        onChange={onChange}
+        onReset={onReset}
+      />,
+    );
+
+    expect(
+      (
+        screen.getByRole("searchbox", {
+          name: "Search",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("piano");
+
+    expect(
+      (
+        screen.getByRole("combobox", {
+          name: "Category",
+        }) as HTMLSelectElement
+      ).value,
+    ).toBe("Pianist");
+
+    expect(
+      (
+        screen.getByRole("spinbutton", {
+          name: "Min price",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("400");
+
+    expect(
+      (
+        screen.getByRole("spinbutton", {
+          name: "Max price",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("");
+
+    expect(
+      (
+        screen.getByRole("combobox", {
+          name: "Sort by",
+        }) as HTMLSelectElement
+      ).value,
+    ).toBe("price-asc");
   });
 });

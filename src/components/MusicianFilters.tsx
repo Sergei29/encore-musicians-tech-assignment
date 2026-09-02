@@ -1,7 +1,26 @@
 "use client";
 
-import { CATEGORIES } from "@/lib";
+import { useEffect, useState } from "react";
+import { CATEGORIES, DEFAULT_FILTERS } from "@/lib";
 import type { MusicianFiltersState, MusicianSort } from "@/types";
+
+interface MusicianFilterFormState {
+  search: string;
+  category: string;
+  minPrice: string;
+  maxPrice: string;
+  sort: MusicianSort;
+}
+
+function toFormState(filters: MusicianFiltersState): MusicianFilterFormState {
+  return {
+    search: filters.search ?? "",
+    category: filters.category ?? "",
+    minPrice: filters.minPrice === undefined ? "" : String(filters.minPrice),
+    maxPrice: filters.maxPrice === undefined ? "" : String(filters.maxPrice),
+    sort: filters.sort ?? "rating-desc",
+  };
+}
 
 interface Props {
   filters: MusicianFiltersState;
@@ -13,6 +32,18 @@ interface Props {
 }
 
 const MusicianFilters = ({ filters, onChange, onReset }: Props) => {
+  const [formState, setFormState] = useState(() => toFormState(filters));
+
+  useEffect(() => {
+    setFormState(toFormState(filters));
+  }, [
+    filters.search,
+    filters.category,
+    filters.minPrice,
+    filters.maxPrice,
+    filters.sort,
+  ]);
+
   return (
     <section
       aria-label="Musician filters"
@@ -23,8 +54,17 @@ const MusicianFilters = ({ filters, onChange, onReset }: Props) => {
         <input
           id="search"
           type="search"
-          value={filters.search}
-          onChange={(event) => onChange("search", event.target.value)}
+          value={formState.search}
+          onChange={(event) => {
+            const value = event.target.value;
+
+            setFormState((current) => ({
+              ...current,
+              search: value,
+            }));
+
+            onChange("search", value);
+          }}
           className="rounded-md border border-gray-300 px-3 py-2"
         />
       </label>
@@ -33,8 +73,17 @@ const MusicianFilters = ({ filters, onChange, onReset }: Props) => {
         <span className="text-sm font-medium text-gray-700">Category</span>
         <select
           id="category"
-          value={filters.category}
-          onChange={(event) => onChange("category", event.target.value)}
+          value={formState.category}
+          onChange={(event) => {
+            const value = event.target.value;
+
+            setFormState((current) => ({
+              ...current,
+              category: value,
+            }));
+
+            onChange("category", value);
+          }}
           className="rounded-md border border-gray-300 px-3 py-2"
         >
           <option value="">All categories</option>
@@ -53,8 +102,20 @@ const MusicianFilters = ({ filters, onChange, onReset }: Props) => {
           id="minPrice"
           type="number"
           min="0"
-          value={filters.minPrice}
-          onChange={(event) => onChange("minPrice", event.target.value)}
+          value={formState.minPrice}
+          onChange={(event) => {
+            setFormState((current) => ({
+              ...current,
+              minPrice: event.target.value,
+            }));
+
+            onChange(
+              "minPrice",
+              event.target.value === ""
+                ? undefined
+                : event.target.valueAsNumber,
+            );
+          }}
           className="rounded-md border border-gray-300 px-3 py-2"
         />
       </label>
@@ -65,8 +126,20 @@ const MusicianFilters = ({ filters, onChange, onReset }: Props) => {
           id="maxPrice"
           type="number"
           min="0"
-          value={filters.maxPrice}
-          onChange={(event) => onChange("maxPrice", event.target.value)}
+          value={formState.maxPrice}
+          onChange={(event) => {
+            setFormState((current) => ({
+              ...current,
+              maxPrice: event.target.value,
+            }));
+
+            onChange(
+              "maxPrice",
+              event.target.value === ""
+                ? undefined
+                : event.target.valueAsNumber,
+            );
+          }}
           className="rounded-md border border-gray-300 px-3 py-2"
         />
       </label>
@@ -75,10 +148,17 @@ const MusicianFilters = ({ filters, onChange, onReset }: Props) => {
         <span className="text-sm font-medium text-gray-700">Sort by</span>
         <select
           id="sort"
-          value={filters.sort}
-          onChange={(event) =>
-            onChange("sort", event.target.value as MusicianSort)
-          }
+          value={formState.sort}
+          onChange={(event) => {
+            const value = event.target.value as MusicianSort;
+
+            setFormState((current) => ({
+              ...current,
+              sort: value,
+            }));
+
+            onChange("sort", value);
+          }}
           className="rounded-md border border-gray-300 px-3 py-2"
         >
           <option value="rating-desc">Rating: High to Low</option>
@@ -91,7 +171,10 @@ const MusicianFilters = ({ filters, onChange, onReset }: Props) => {
       <div className="mt-auto mb-1">
         <button
           type="button"
-          onClick={onReset}
+          onClick={() => {
+            setFormState(toFormState(DEFAULT_FILTERS));
+            onReset();
+          }}
           className="rounded-md bg-gray-200 px-3 py-2 text-sm font-medium cursor-pointer"
         >
           Reset filters

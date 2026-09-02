@@ -6,6 +6,14 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import {
+  Outlet,
+  RouterProvider,
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+} from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
@@ -133,12 +141,42 @@ class IntersectionObserverMock implements IntersectionObserver {
   }
 }
 
-function renderPage() {
-  return render(
+function createTestRouter(initialUrl = "/") {
+  const rootRoute = createRootRoute({
+    component: Outlet,
+  });
+
+  const indexRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/",
+    component: MusicianSearchPage,
+  });
+
+  const routeTree = rootRoute.addChildren([indexRoute]);
+
+  return createRouter({
+    routeTree,
+    history: createMemoryHistory({
+      initialEntries: [initialUrl],
+    }),
+  });
+}
+
+async function renderPage(initialUrl = "/") {
+  const router = createTestRouter(initialUrl);
+
+  await router.load();
+
+  const result = render(
     <QueryClientProvider client={queryClient}>
-      <MusicianSearchPage />
+      <RouterProvider router={router} />
     </QueryClientProvider>,
   );
+
+  return {
+    ...result,
+    router,
+  };
 }
 
 beforeEach(() => {
@@ -170,7 +208,7 @@ describe("MusicianSearchPage", () => {
   it("shows loading and then renders the first page with its total", async () => {
     fetchMusiciansMock.mockResolvedValueOnce(createResponse([firstMusician]));
 
-    renderPage();
+    await renderPage();
 
     expect(screen.getByText("Loading…")).toBeTruthy();
     expect(await screen.findByText(firstMusician.title)).toBeTruthy();
@@ -184,7 +222,7 @@ describe("MusicianSearchPage", () => {
     vi.useFakeTimers();
     fetchMusiciansMock.mockResolvedValue(createResponse([]));
 
-    renderPage();
+    await renderPage();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(299);
@@ -221,7 +259,7 @@ describe("MusicianSearchPage", () => {
       new Error("Could not load musicians"),
     );
 
-    renderPage();
+    await renderPage();
 
     expect(
       await screen.findByText("Error: Could not load musicians"),
@@ -233,7 +271,7 @@ describe("MusicianSearchPage", () => {
       .mockResolvedValueOnce(createResponse([firstMusician], 2, 0))
       .mockResolvedValueOnce(createResponse([secondMusician], 2, 1));
 
-    renderPage();
+    await renderPage();
 
     expect(await screen.findByText(firstMusician.title)).toBeTruthy();
     await waitFor(() => {
