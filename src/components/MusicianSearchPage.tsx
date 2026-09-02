@@ -1,7 +1,8 @@
 "use client";
 
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { MusicianFiltersState } from "@/types";
 import { DEFAULT_FILTERS, fetchMusicians } from "@/lib";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
@@ -9,18 +10,36 @@ import MusicianFilters from "./MusicianFilters";
 import MusiciansList from "./MusiciansList";
 
 function MusicianSearchPage() {
-  const [filters, setFilters] = useState<MusicianFiltersState>(DEFAULT_FILTERS);
-  const debouncedSearch = useDebouncedValue(filters.search, 300);
+  const navigate = useNavigate({ from: "/" });
+  const queryParams: MusicianFiltersState = useSearch({ from: "/" });
+
+  const debouncedSearch = useDebouncedValue(queryParams.search || "", 300);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   function updateFilter<K extends keyof MusicianFiltersState>(
     name: K,
     value: MusicianFiltersState[K],
   ) {
-    setFilters((current) => ({
-      ...current,
-      [name]: value,
-    }));
+    navigate({
+      replace: true,
+      search: (currentSearch) => ({
+        ...currentSearch,
+        [name]: value,
+      }),
+    });
+  }
+
+  function resetFilter() {
+    navigate({
+      replace: true,
+      search: (currentSearch) => {
+        const newSearch: Record<string, unknown> = { ...currentSearch };
+        for (const key of Object.keys(DEFAULT_FILTERS)) {
+          newSearch[key] = undefined;
+        }
+        return newSearch;
+      },
+    });
   }
 
   const {
@@ -37,22 +56,20 @@ function MusicianSearchPage() {
       "musicians",
       {
         search: debouncedSearch,
-        category: filters.category,
-        minPrice: filters.minPrice,
-        maxPrice: filters.maxPrice,
-        sort: filters.sort,
+        category: queryParams.category,
+        minPrice: queryParams.minPrice,
+        maxPrice: queryParams.maxPrice,
+        sort: queryParams.sort,
       },
     ],
     initialPageParam: 0,
     queryFn: ({ pageParam, signal }) =>
       fetchMusicians({
         search: debouncedSearch,
-        category: filters.category,
-        minPrice:
-          filters.minPrice === "" ? undefined : Number(filters.minPrice),
-        maxPrice:
-          filters.maxPrice === "" ? undefined : Number(filters.maxPrice),
-        sort: filters.sort,
+        category: queryParams.category ?? "",
+        minPrice: queryParams.minPrice,
+        maxPrice: queryParams.maxPrice,
+        sort: queryParams.sort ?? "rating-desc",
         offset: pageParam,
         limit: 10,
         signal,
@@ -101,9 +118,9 @@ function MusicianSearchPage() {
       <h1 className="text-2xl font-bold">Encore Musician Search</h1>
 
       <MusicianFilters
-        filters={filters}
+        filters={queryParams}
         onChange={updateFilter}
-        onReset={() => setFilters(DEFAULT_FILTERS)}
+        onReset={resetFilter}
       />
 
       <section aria-label="Musician results" className="mt-6">

@@ -40,8 +40,8 @@ export const CATEGORIES = [
 export const DEFAULT_FILTERS: MusicianFiltersState = {
   search: "",
   category: "",
-  minPrice: "",
-  maxPrice: "",
+  minPrice: undefined,
+  maxPrice: undefined,
   sort: "rating-desc",
 };
 

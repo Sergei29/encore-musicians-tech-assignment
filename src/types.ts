@@ -34,9 +34,9 @@ export interface FetchMusiciansParams {
 }
 
 export interface MusicianFiltersState {
-  search: string;
-  category: string;
-  minPrice: string;
-  maxPrice: string;
-  sort: MusicianSort;
+  search?: string;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sort?: MusicianSort;
 }
